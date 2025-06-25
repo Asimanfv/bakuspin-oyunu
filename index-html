@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="documentTitle">Bakuspin Oyunu</title>
+    <!-- Inter font from Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* General body styling with background image */
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-image: url('https://images.unsplash.com/photo-1549692520-256ef26e5e04?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            color: #333;
+            position: relative;
+        }
+
+        /* Dark overlay for background image readability */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            z-index: -1;
+        }
+
+        /* Main container for the entire game app */
+        .main-app-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 450px;
+        }
+        
+        /* Game container styling */
+        .game-container {
+            background-color: transparent;
+            padding: 0;
+            text-align: center;
+            width: 100%;
+            animation: fadeIn 1s ease-out;
+            position: relative;
+        }
+
+        /* Slot machine frame styling */
+        .slot-frame {
+            background: linear-gradient(180deg, #3a3f52 0%, #1a1e2b 100%);
+            border: 5px solid #8B4513;
+            border-radius: 40px;
+            padding: 10px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5), 0 10px 20px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        /* Inner gold border effect */
+        .slot-frame::before {
+            content: '';
+            position: absolute;
+            top: 5px; left: 5px; right: 5px; bottom: 5px;
+            border: 3px solid #FFD700;
+            border-radius: 35px;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* Header bar styling */
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #3f51b5;
+            padding: 10px 15px;
+            border-top-left-radius: 30px;
+            border-top-right-radius: 30px;
+            margin: -5px -5px 10px -5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        /* Language selector styling */
+        .language-selector {
+            background: transparent; display: flex; align-items: center; gap: 8px; color: white;
+        }
+        .language-selector .fa-globe { font-size: 1.5em; color: #FFD700; }
+        .language-selector select {
+            background-color: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 8px; padding: 4px 8px; font-size: 0.9em; cursor: pointer;
+        }
+        .language-selector select option { color: #333; background-color: #fff; }
+        #gameTitle {
+            font-family: 'Impact', sans-serif; color: #FFD700; font-size: 2em;
+            text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.4); letter-spacing: 1px;
+            text-transform: uppercase; margin: 0; flex-grow: 1;
+        }
+
+        /* Reels grid styling */
+        .reels-grid {
+            display: flex; gap: 5px; background-color: #000; padding: 5px; border-radius: 5px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8); margin-bottom: 15px;
+            height: 275px; overflow: hidden; position: relative;
+        }
+        .reel-column { flex: 1; height: 100%; overflow: hidden; position: relative; border-radius: 5px; }
+        .reel-strip { position: absolute; width: 100%; top: 0; }
+
+        /* Individual reel cell styling */
+        .reel-cell {
+            background-color: #222; border-radius: 5px; height: 65px; display: flex;
+            justify-content: center; align-items: center; font-size: 2.2em;
+            color: white; border: 1px solid #444; box-shadow: inset 0 0 3px rgba(255,255,255,0.1);
+            margin-bottom: 5px; box-sizing: border-box; transition: transform 0.2s ease;
+        }
+        .reel-cell.winning { animation: win-animation 0.8s ease-in-out infinite; }
+        .reel-cell:last-child { margin-bottom: 0; }
+
+        /* --- CONTROLS SECTION STYLING --- */
+        .controls-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: linear-gradient(180deg, #8B0000 0%, #B22222 100%);
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+            margin: 0 -5px -5px -5px;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.3);
+        }
+
+        .left-controls, .right-controls {
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+        }
+
+        .balance-box, .bet-box {
+            background-color: #FFD700; color: #333; padding: 4px 8px;
+            border-radius: 10px; font-weight: bold; font-size: 0.9em;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); text-align: center; min-width: 90px;
+        }
+
+        .box-label { font-size: 0.7em; color: #5a718c; text-transform: uppercase; }
+        .box-value { font-size: 1em; color: #333; }
+
+        .bet-controls { display: flex; align-items: center; gap: 5px; }
+        .bet-control-btn {
+            background: #A52A2A; color: white; border: none; border-radius: 50%;
+            width: 25px; height: 25px; font-size: 1em; font-weight: bold;
+            cursor: pointer; display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .center-controls {
+            display: flex; align-items: center; gap: 10px;
+        }
+
+        .spin-button {
+            width: 70px; height: 70px; border-radius: 50%;
+            background: linear-gradient(145deg, #4CAF50, #28a745);
+            color: white; font-size: 1.5em;
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4), inset 0 0 10px rgba(255,255,255,0.3);
+            border: 3px solid #228B22; display: flex; justify-content: center;
+            align-items: center; cursor: pointer; transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
+        }
+        .spin-button:active { transform: scale(0.95); }
+        .spin-button[disabled] {
+            background: #cccccc; border-color: #999999;
+            cursor: not-allowed; box-shadow: none; opacity: 0.7;
+        }
+        
+        .auto-spin-button {
+            background: linear-gradient(145deg, #3f51b5, #303f9f);
+            color: white; padding: 10px 15px; border: none; border-radius: 20px;
+            font-size: 0.9em; font-weight: bold; cursor: pointer;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+        }
+        .auto-spin-button.active {
+             background: linear-gradient(145deg, #ffc107, #ff9800);
+             color: #333;
+        }
+        
+        /* --- Modal Styling --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.85); display: none; /* Changed from flex to none */
+            justify-content: center; align-items: center; z-index: 1000;
+            opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.show { display: flex; opacity: 1; visibility: visible; }
+        .modal-content {
+            color: white; padding: 30px; border-radius: 20px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            position: relative; max-width: 90%; width: 350px;
+        }
+        .modal-overlay.show .modal-content { transform: scale(1); }
+        .modal-close-button {
+            position: absolute; top: 10px; right: 15px; background: none; border: none;
+            color: white; font-size: 2em; cursor: pointer; line-height: 1;
+        }
+
+        .win-modal-content { background: linear-gradient(145deg, #4CAF50, #28a745); border: 5px solid #FFD700; }
+        .win-modal-content h2 {
+            margin: 0 0 15px 0; font-size: 2.5em; font-family: 'Impact', sans-serif;
+            color: #FFD700; text-shadow: 3px 3px 5px rgba(0,0,0,0.4);
+        }
+        .win-modal-content p { margin: 0; font-size: 1.5em; font-weight: bold; }
+
+        /* --- MENU & RULES MODAL --- */
+        .menu-modal-content, .rules-modal-content {
+            background: #0a2239; border: 2px solid #D4AF37; width: 90%; max-width: 400px;
+            display: flex; flex-direction: column; align-items: center; gap: 15px;
+        }
+        .modal-title-text {
+            font-family: 'Impact', sans-serif; font-size: 3em; color: #D4AF37;
+            margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .modal-subtitle-text {
+            font-size: 1em; color: #fff; margin: 0 0 10px 0; font-weight: normal;
+        }
+        .menu-skyline { width: 100%; margin-bottom: 20px; }
+        .menu-skyline svg { width: 100%; height: auto; fill: #D4AF37; }
+        .menu-button-list { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .menu-modal-button {
+            width: 80%; padding: 12px; background: transparent; border: 2px solid #D4AF37;
+            color: #D4AF37; border-radius: 30px; font-size: 1.2em; font-weight: bold;
+            cursor: pointer; transition: all 0.3s ease;
+        }
+        .menu-modal-button:hover { background-color: #D4AF37; color: #0a2239; }
+        
+        #rulesTable { width: 90%; margin-top: 15px; border-collapse: collapse; }
+        #rulesTable th, #rulesTable td {
+            border: 1px solid #D4AF37; padding: 8px;
+            font-size: 1.2em;
+        }
+        #rulesTable th { background-color: #D4AF37; color: #0a2239; }
+        #rulesTable td:first-child { font-size: 1.5em; }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes win-animation {
+            0%, 100% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.15); filter: brightness(1.5); }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .reel-cell { height: 50px; font-size: 1.8em; }
+            .reels-grid { height: 216px; gap: 4px; }
+            .main-app-container { max-width: 95%; }
+            .controls-section { padding: 8px 10px; flex-wrap: wrap; justify-content: center; }
+            .modal-content { width: 90%; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-app-container" id="main-app-container" style="display: none;">
+        <div class="game-container">
+            <div class="slot-frame">
+                <div class="header-bar">
+                     <div class="language-selector">
+                        <i class="fas fa-globe"></i>
+                        <select id="langSelect">
+                            <option value="az">AZ</option>
+                            <option value="en">EN</option>
+                        </select>
+                    </div>
+                    <h1 id="gameTitle">BAKUSPIN</h1>
+                    <button id="menuButton" class="menu-modal-button" style="width: auto; font-size: 1em; padding: 8px 15px;">MENYU</button>
+                </div>
+
+                <div class="reels-grid">
+                    <div class="reel-column" id="col-0"><div class="reel-strip" id="strip-0"></div></div>
+                    <div class="reel-column" id="col-1"><div class="reel-strip" id="strip-1"></div></div>
+                    <div class="reel-column" id="col-2"><div class="reel-strip" id="strip-2"></div></div>
+                    <div class="reel-column" id="col-3"><div class="reel-strip" id="strip-3"></div></div>
+                    <div class="reel-column" id="col-4"><div class="reel-strip" id="strip-4"></div></div>
+                </div>
+
+                <div class="controls-section">
+                    <div class="left-controls">
+                        <div class="balance-box">
+                            <span id="balanceLabel" class="box-label">BALANS</span>
+                            <span id="currentBalanceValue" class="box-value"></span>
+                        </div>
+                    </div>
+
+                    <div class="center-controls">
+                         <button id="autoSpinButton" class="auto-spin-button">AVTO</button>
+                         <button id="spinButton" class="spin-button"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+
+                    <div class="right-controls">
+                         <div class="bet-box">
+                             <span id="betLabel" class="box-label">MƏRC</span>
+                             <span id="currentBetValue" class="box-value"></span>
+                         </div>
+                         <div class="bet-controls">
+                             <button id="decreaseBetBtn" class="bet-control-btn">-</button>
+                             <button id="increaseBetBtn" class="bet-control-btn">+</button>
+                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Win Modal -->
+    <div id="winModal" class="modal-overlay">
+        <div class="modal-content win-modal-content">
+            <button class="modal-close-button">&times;</button>
+            <h2 id="modalTitle">TƏBRİKLƏR!</h2>
+            <p id="modalMessage"></p>
+        </div>
+    </div>
+    
+    <!-- Menu Modal, shown by default -->
+    <div id="menuModal" class="modal-overlay show">
+         <div class="modal-content menu-modal-content">
+            <h1 class="modal-title-text">BAKUSPIN</h1>
+            <h2 class="modal-subtitle-text">AZƏRBAYCAN TEMALI SLOT OYUNU</h2>
+            <div class="menu-skyline">
+                <svg viewBox="0 0 400 150">
+                    <path d="M0 150 L0 120 C10 115, 20 120, 30 120 L30 80 C40 75, 50 80, 60 80 L60 120 C70 115, 80 120, 90 120 L90 100 C95 98, 100 98, 105 100 L105 120 C115 115, 125 120, 135 120 L135 150 Z M140 150 L140 70 C145 60, 160 50, 175 40 C190 30, 200 10, 210 0 C220 10, 230 30, 245 40 C260 50, 275 60, 280 70 L280 150 Z M220 150 L220 50 C225 45, 230 45, 235 50 L235 150 Z M190 150 L190 40 C195 35, 200 35, 205 40 L205 150 Z M290 150 L290 120 C295 118, 300 118, 305 120 L305 100 C310 95, 320 95, 325 100 L325 120 C335 115, 345 120, 355 120 L355 80 C360 78, 365 78, 370 80 L370 120 C380 115, 390 120, 400 120 L400 150 Z"/>
+                </svg>
+            </div>
+            <div class="menu-button-list">
+                <button id="menuStartGameButton" class="menu-modal-button">OYUNA BAŞLA</button>
+                <button id="menuRulesButton" class="menu-modal-button">QAYDALAR</button>
+                <button id="menuBuyManatButton" class="menu-modal-button">MANAT AL</button>
+                <button id="menuSettingsButton" class="menu-modal-button">AYARLAR</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Rules Modal -->
+    <div id="rulesModal" class="modal-overlay">
+         <div class="modal-content rules-modal-content">
+            <button class="modal-close-button">&times;</button>
+            <h1 id="rulesModalTitle" class="modal-title-text">QAYDALAR</h1>
+            <h2 id="rulesModalSubtitle" class="modal-subtitle-text">3 eyni simvol uduş gətirir</h2>
+            <table id="rulesTable">
+                <thead><tr><th id="rulesSymbolHeader">Simvol</th><th id="rulesMultiplierHeader">Çarpan</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const betLevels = [0.20, 0.50, 1.00, 2.00, 5.00];
+        const symbols = ['☪️', '🔥', '🍀', '💠', '🍎', '⚜️', '🧩', '🚀', '🌟', '🔔', '👑', '🎉', '🎁', '💎'];
+        const symbolPayouts = { // Base multipliers
+            '🎁': 5, '🔔': 10, '🧩': 15, '🔥': 20, '☪️': 25, '💠': 30, '🚀': 35, '💎': 50,
+            '👑': 40, '🍀': 2, '🍎': 2, '⚜️': 2, '🌟': 3, '🎉': 3
+        };
+        const translations = {
+             az: { 
+                 docTitle: "Bakuspin Oyunu", gameTitle: "BAKUSPIN", balanceLabel: "BALANS", betLabel: "MƏRC",
+                 winModalTitle: "TƏBRİKLƏR!", winMessage: "AMOUNT manat qazandınız! 🎉", 
+                 insufficientBalanceMessage: "Balansınız yetərli deyil.", menuButtonText: "MENYU", 
+                 menuStartGame: "OYUNA BAŞLA", menuRules: "QAYDALAR", menuBuyManat: "MANAT AL", menuSettings: "AYARLAR", 
+                 notImplemented: "Bu funksiya tezliklə əlavə olunacaq.", spinText:"<i class='fas fa-sync-alt'></i>", stopText: "STOP",
+                 autoSpinText: "AVTO", rulesTitle: "QAYDALAR", rulesSubtitle: "Ortadakı 3 eyni simvol uduş gətirir",
+                 rulesSymbolHeader: "Simvol", rulesMultiplierHeader: "Çarpan"
+             },
+             en: { 
+                 docTitle: "Bakuspin Game", gameTitle: "BAKUSPIN", balanceLabel: "BALANCE", betLabel: "BET",
+                 winModalTitle: "CONGRATULATIONS!", winMessage: "You won AMOUNT manat! 🎉", 
+                 insufficientBalanceMessage: "Insufficient balance.", menuButtonText: "MENU", 
+                 menuStartGame: "START GAME", menuRules: "RULES", menuBuyManat: "BUY MANAT", menuSettings: "SETTINGS", 
+                 notImplemented: "This feature will be added soon.", spinText:"<i class='fas fa-sync-alt'></i>", stopText: "STOP",
+                 autoSpinText: "AUTO", rulesTitle: "RULES", rulesSubtitle: "3 matching symbols in the middle win",
+                 rulesSymbolHeader: "Symbol", rulesMultiplierHeader: "Multiplier"
+             },
+        };
+
+        // --- AUDIO ENGINE ---
+        const AudioEngine = {
+            ctx: null,
+            spinLoopInterval: null,
+            init() {
+                try {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                } catch(e) { console.warn('Web Audio API not supported'); }
+            },
+            // Call this from a user interaction event (e.g., button click)
+            resume() {
+                if(this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            },
+            play(soundType, options = {}) {
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                
+                if (soundType === 'click') {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(800, now);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
+                    osc.connect(gain).connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (soundType === 'reel_land') {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(80, now + 0.1);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
+                    osc.connect(gain).connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (soundType === 'win') {
+                    const notes = options.isBigWin ? [523, 659, 783, 1046, 783, 1046] : [523, 659, 783, 1046];
+                    const duration = options.isBigWin ? 0.12 : 0.1;
+                    notes.forEach((freq, i) => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + i * duration);
+                        gain.gain.setValueAtTime(0.3, now + i * duration);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, now + (i + 1) * duration);
+                        osc.connect(gain).connect(this.ctx.destination);
+                        osc.start(now + i * duration);
+                        osc.stop(now + (i + 1) * duration);
+                    });
+                } else if (soundType === 'lose') {
+                     const osc = this.ctx.createOscillator();
+                     const gain = this.ctx.createGain();
+                     osc.type = 'sawtooth';
+                     osc.frequency.setValueAtTime(150, now);
+                     osc.frequency.exponentialRampToValueAtTime(100, now + 0.2);
+                     gain.gain.setValueAtTime(0.1, now);
+                     gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+                     osc.connect(gain).connect(this.ctx.destination);
+                     osc.start(now);
+                     osc.stop(now + 0.2);
+                }
+            },
+            startSpinLoop() {
+                if (!this.ctx || this.spinLoopInterval) return;
+                const playTick = () => {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(400, now);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
+                    osc.connect(gain).connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                };
+                this.spinLoopInterval = setInterval(playTick, 150);
+            },
+            stopSpinLoop() {
+                clearInterval(this.spinLoopInterval);
+                this.spinLoopInterval = null;
+            }
+        };
+
+
+        // --- GAME STATE ---
+        let balance = 100;
+        let currentBetIndex = 0;
+        let spinCounter = 0, isSpinning = false, stopRequested = false;
+        let isAutoSpinning = false;
+        let animationFrameId;
+        let currentLanguage = 'az';
+        let reelAnimationData = [];
+
+        // --- DOM ELEMENTS ---
+        const dom = {
+            appContainer: document.getElementById('main-app-container'),
+            docTitle: document.getElementById('documentTitle'), gameTitle: document.getElementById('gameTitle'),
+            reelStrips: document.querySelectorAll('.reel-strip'),
+            spinButton: document.getElementById('spinButton'), autoSpinButton: document.getElementById('autoSpinButton'),
+            langSelect: document.getElementById('langSelect'),
+            menuButton: document.getElementById('menuButton'),
+            balanceLabel: document.getElementById('balanceLabel'), balanceValue: document.getElementById('currentBalanceValue'),
+            betLabel: document.getElementById('betLabel'), betValue: document.getElementById('currentBetValue'),
+            decreaseBetBtn: document.getElementById('decreaseBetBtn'), increaseBetBtn: document.getElementById('increaseBetBtn'),
+            winModal: document.getElementById('winModal'), modalTitle: document.getElementById('modalTitle'), modalMessage: document.getElementById('modalMessage'),
+            menuModal: document.getElementById('menuModal'), menuStartGame: document.getElementById('menuStartGameButton'),
+            menuRules: document.getElementById('menuRulesButton'), menuBuyManat: document.getElementById('menuBuyManatButton'), menuSettings: document.getElementById('menuSettingsButton'),
+            rulesModal: document.getElementById('rulesModal'), rulesModalTitle: document.getElementById('rulesModalTitle'), rulesModalSubtitle: document.getElementById('rulesModalSubtitle'),
+            rulesTableBody: document.querySelector('#rulesTable tbody'), rulesSymbolHeader: document.getElementById('rulesSymbolHeader'),
+            rulesMultiplierHeader: document.getElementById('rulesMultiplierHeader'),
+            allModalCloseButtons: document.querySelectorAll('.modal-close-button')
+        };
+        
+        // --- TRANSLATION & UI UPDATE ---
+        const getT = () => translations[currentLanguage];
+        function setLanguage(langCode) {
+            currentLanguage = langCode;
+            const t = getT();
+            dom.docTitle.textContent = t.docTitle; dom.gameTitle.textContent = t.gameTitle;
+            dom.balanceLabel.textContent = t.balanceLabel; dom.betLabel.textContent = t.betLabel;
+            dom.menuButton.textContent = t.menuButtonText; dom.menuStartGame.textContent = t.menuStartGame;
+            dom.menuRules.textContent = t.menuRules; dom.menuBuyManat.textContent = t.menuBuyManat;
+            dom.menuSettings.textContent = t.menuSettings; dom.autoSpinButton.textContent = t.autoSpinText;
+            dom.rulesModalTitle.textContent = t.rulesTitle; dom.rulesModalSubtitle.textContent = t.rulesSubtitle;
+            dom.rulesSymbolHeader.textContent = t.rulesSymbolHeader; dom.rulesMultiplierHeader.textContent = t.rulesMultiplierHeader;
+            populateRulesTable();
+            updateGameDisplays();
+        }
+        function updateGameDisplays() {
+            const spinCost = betLevels[currentBetIndex];
+            dom.balanceValue.textContent = `₼ ${balance.toFixed(2)}`;
+            dom.betValue.textContent = `₼ ${spinCost.toFixed(2)}`;
+            dom.spinButton.disabled = isSpinning && !stopRequested;
+            dom.autoSpinButton.disabled = isSpinning;
+
+            if (isSpinning || isAutoSpinning) {
+                dom.spinButton.innerHTML = getT().stopText;
+            } else {
+                dom.spinButton.innerHTML = getT().spinText;
+            }
+            dom.autoSpinButton.classList.toggle('active', isAutoSpinning);
+        }
+
+        // --- MODAL HANDLING ---
+        function showModal(modal) { modal.classList.add('show'); }
+        function hideModal(modal) { modal.classList.remove('show'); }
+        function hideAllModals() {
+            document.querySelectorAll('.modal-overlay').forEach(modal => hideModal(modal));
+        }
+        function showWinModal(amountWon) {
+            AudioEngine.play('win', { isBigWin: amountWon > betLevels[currentBetIndex] * 10 });
+            const t = getT();
+            dom.modalTitle.textContent = t.winModalTitle;
+            dom.modalMessage.textContent = t.winMessage.replace('AMOUNT', amountWon.toFixed(2));
+            showModal(dom.winModal);
+        }
+        function populateRulesTable() {
+            dom.rulesTableBody.innerHTML = '';
+            for (const symbol in symbolPayouts) {
+                const row = dom.rulesTableBody.insertRow();
+                row.innerHTML = `<td>${symbol}</td><td>x${symbolPayouts[symbol]}</td>`;
+            }
+        }
+
+        // --- BETTING ---
+        function changeBet(direction) {
+            AudioEngine.play('click');
+            if(isSpinning) return;
+            currentBetIndex += direction;
+            if (currentBetIndex < 0) currentBetIndex = 0;
+            if (currentBetIndex >= betLevels.length) currentBetIndex = betLevels.length - 1;
+            updateGameDisplays();
+        }
+
+        // --- SPIN LOGIC ---
+        function handleSpinClick() {
+            AudioEngine.play('click');
+            AudioEngine.resume(); // Ensure audio is active
+            if (!isSpinning) {
+                if (isAutoSpinning) {
+                    isAutoSpinning = false;
+                    updateGameDisplays();
+                } else {
+                    startSpin();
+                }
+            } else if (!stopRequested) {
+                stopRequested = true;
+                dom.spinButton.disabled = true;
+            }
+        }
+        function handleAutoSpinClick() {
+            AudioEngine.play('click');
+            AudioEngine.resume(); // Ensure audio is active
+            if(isSpinning) return;
+            isAutoSpinning = !isAutoSpinning;
+            if (isAutoSpinning) {
+                startSpin();
+            }
+            updateGameDisplays();
+        }
+
+        function startSpin() {
+            const spinCost = betLevels[currentBetIndex];
+            if (balance < spinCost) {
+                alert(getT().insufficientBalanceMessage);
+                isAutoSpinning = false;
+                updateGameDisplays();
+                return;
+            }
+            
+            AudioEngine.startSpinLoop();
+            cancelAnimationFrame(animationFrameId);
+            isSpinning = true;
+            stopRequested = false;
+            spinCounter++;
+            balance -= spinCost;
+            updateGameDisplays();
+            
+            let finalSymbols = Array.from({ length: 5 }, () => symbols[Math.floor(Math.random() * symbols.length)]);
+            
+            if (spinCounter % 5 === 0) {
+                const winningPayouts = Object.keys(symbolPayouts);
+                const forcedWinSymbol = winningPayouts[Math.floor(Math.random() * winningPayouts.length)];
+                finalSymbols[1] = finalSymbols[2] = finalSymbols[3] = forcedWinSymbol;
+            }
+            
+            reelAnimationData = [];
+            
+            dom.reelStrips.forEach((strip, i) => {
+                const finalVisibleSymbols = [
+                     symbols[Math.floor(Math.random() * symbols.length)], finalSymbols[i],
+                     symbols[Math.floor(Math.random() * symbols.length)], symbols[Math.floor(Math.random() * symbols.length)],
+                ];
+                const animationData = {
+                    strip, finalVisibleSymbols, isStopping: false,
+                    stopTime: 0, velocity: 30 + Math.random() * 10, isFinished: false
+                };
+                reelAnimationData.push(animationData);
+                setTimeout(() => { if (!stopRequested) animationData.isStopping = true; }, 1000 + i * 200);
+            });
+            
+            animationFrameId = requestAnimationFrame(animateReels);
+        }
+        
+        function animateReels() {
+            let allFinished = true;
+            
+            reelAnimationData.forEach(data => {
+                if (data.isFinished) return;
+                let currentY = parseFloat(data.strip.style.transform.replace('translateY(', '')) || 0;
+                
+                if (!data.isStopping) {
+                    currentY -= data.velocity;
+                    const cellHeight = 65 + 5;
+                    if(currentY < -cellHeight * 4) currentY += cellHeight * 4;
+                    const blurSymbols = Array.from({length: 8}, () => symbols[Math.floor(Math.random() * symbols.length)]);
+                    data.strip.innerHTML = blurSymbols.map(s => `<div class="reel-cell">${s}</div>`).join('');
+                } else {
+                    if (data.stopTime === 0) {
+                        data.stopTime = 1;
+                        const buffer = Array.from({length: 10}, () => symbols[Math.floor(Math.random() * symbols.length)]);
+                        const fullStrip = [...buffer, ...data.finalVisibleSymbols];
+                        data.strip.innerHTML = fullStrip.map(s => `<div class="reel-cell">${s}</div>`).join('');
+                        currentY = 0;
+                    }
+                    const targetY = 0;
+                    const distance = targetY - currentY;
+                    currentY += distance * 0.1;
+                    if(Math.abs(distance) < 1) {
+                        currentY = targetY;
+                        data.isFinished = true;
+                        data.strip.innerHTML = data.finalVisibleSymbols.map(s => `<div class="reel-cell">${s}</div>`).join('');
+                        AudioEngine.play('reel_land'); // Play land sound
+                    }
+                }
+                data.strip.style.transform = `translateY(${currentY}px)`;
+                if(!data.isFinished) allFinished = false;
+            });
+            
+            if (!allFinished) {
+                animationFrameId = requestAnimationFrame(animateReels);
+            } else {
+                finishSpinSequence();
+            }
+        }
+        
+        function checkWin(winningSymbols, winningCells) {
+            if (winningSymbols[1] === winningSymbols[2] && winningSymbols[2] === winningSymbols[3]) {
+                const winningSymbol = winningSymbols[1];
+                const multiplier = symbolPayouts[winningSymbol] || 0;
+                if (multiplier > 0) {
+                    const amountWon = multiplier * betLevels[currentBetIndex];
+                    balance += amountWon;
+                    showWinModal(amountWon);
+                    winningCells.forEach(cell => {
+                        cell.classList.add('winning');
+                        setTimeout(() => cell.classList.remove('winning'), 1600);
+                    });
+                    return true; // It's a win
+                }
+            }
+            return false; // Not a win
+        }
+        
+        function finishSpinSequence() {
+            AudioEngine.stopSpinLoop();
+            isSpinning = false;
+            const finalSymbols = reelAnimationData.map(d => d.finalVisibleSymbols[1]);
+            const finalCells = reelAnimationData.map(d => d.strip.children[1]);
+            const winningCells = [finalCells[1], finalCells[2], finalCells[3]];
+            const hasWon = checkWin(finalSymbols, winningCells);
+
+            if (!hasWon) {
+                 AudioEngine.play('lose');
+            }
+
+            updateGameDisplays();
+            
+            if (isAutoSpinning) {
+                setTimeout(startSpin, hasWon ? 2000 : 800);
+            }
+        }
+
+        function setupReels() {
+            dom.reelStrips.forEach(strip => {
+                 const initialSymbols = Array.from({ length: 4 }, () => symbols[Math.floor(Math.random() * symbols.length)]);
+                 strip.innerHTML = initialSymbols.map(s => `<div class="reel-cell">${s}</div>`).join('');
+            });
+        }
+
+        // --- INITIALIZATION ---
+        function init() {
+            // Event Listeners
+            dom.spinButton.addEventListener('click', handleSpinClick);
+            dom.autoSpinButton.addEventListener('click', handleAutoSpinClick);
+            dom.decreaseBetBtn.addEventListener('click', () => changeBet(-1));
+            dom.increaseBetBtn.addEventListener('click', () => changeBet(1));
+            dom.langSelect.addEventListener('change', (e) => setLanguage(e.target.value));
+            
+            // Modal Listeners
+            dom.allModalCloseButtons.forEach(btn => btn.addEventListener('click', () => {
+                AudioEngine.play('click');
+                hideAllModals();
+            }));
+            dom.winModal.addEventListener('click', (e) => e.target === dom.winModal && hideAllModals());
+            dom.menuModal.addEventListener('click', (e) => e.target === dom.menuModal && hideAllModals());
+            dom.rulesModal.addEventListener('click', (e) => e.target === dom.rulesModal && hideAllModals());
+
+            // Menu Button Listeners
+            dom.menuButton.addEventListener('click', () => { AudioEngine.play('click'); showModal(dom.menuModal); });
+            dom.menuStartGame.addEventListener('click', () => { 
+                AudioEngine.init(); // Initialize Audio on first user interaction
+                AudioEngine.play('click');
+                hideModal(dom.menuModal); 
+                dom.appContainer.style.display = 'flex';
+            });
+            dom.menuRules.addEventListener('click', () => { AudioEngine.play('click'); showModal(dom.rulesModal); });
+            
+            const showNotImplemented = () => alert(getT().notImplemented);
+            dom.menuBuyManat.addEventListener('click', () => { AudioEngine.play('click'); showNotImplemented(); });
+            dom.menuSettings.addEventListener('click', () => { AudioEngine.play('click'); showNotImplemented(); });
+            
+            // Initial Setup
+            setLanguage(currentLanguage);
+            setupReels();
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
